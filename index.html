@@ -30,13 +30,19 @@
 
 <section id="auth" class="slide">
   <h1>
-    Any gems for authorization?
+    Are there any gems for authorization?
     <br />
     <br />
     <em style="font-size: 30%">by
-    Denis Yagofarov, developer at Aejis,
-    <a href="https://github.com/denyago">@denyago</a></em>
+    Denis '<a href="https://github.com/denyago">@denyago</a>' Yagofarov, developer at Aejis
+
+  </em>
   </h1>
+  <p>
+    <center>
+      Slides: <a href="http://denyago.github.io/any-gems-for-authorization/index.html">http://denyago.github.io/any-gems-for-authorization</a>
+    </center>
+  </p>
 </section>
 
 <section class="slide">
@@ -225,6 +231,59 @@ puts (user.implicit.id || '#FILTERED')
   </ul>
 </section>
 
+<section id="heimdallr-trollface" class="slide">
+  <h2>:trollface:</h2>
+  <ul>
+    <li id="heimdallr-no-bangs" class="slide">No <code>bang!</code> methods</li>
+    <li id="heimdallr-no-scopes-for-relations" class="slide">
+      Unable to insert scopes into relations
+      <textarea class="code" method="ruby">
+user.groups.with_tags([:trolls, :faces])
+# => will raise exception
+      </textarea>
+    </li>
+    <li id="heimdallr-strange-caching" class="slide">
+      Strange caching of permissions
+      (<a href="https://github.com/inossidabile/heimdallr/blob/master/lib/heimdallr/evaluator.rb#L153">evaluator.rb#L153</a>)
+      <textarea class="code" method="ruby">
+def evaluate(context, record=nil)
+  if [context, record] != @last_context
+      </textarea>
+    </li>
+  </ul>
+</section>
+
+<section id="comparation-code" class="slide">
+  <h2>Compare CanCan and Heimdallr</h2>
+  <textarea class="code" method="ruby">
+5000.times do |i|
+  User.create!(id: i, name: 'Name ' + i.to_s)
+end
+
+Benchmark.bmbm(3) do |x|
+  x.report("CanCan: ")    { User.accessible_by(@current_ability).all }
+  x.report("Heimdallr: ") { User.restrict(@current_user).all }
+  x.report("Heimdallr (insecure): ") { User.restrict(@current_user).insecure.all }
+end
+  </textarea>
+</section>
+
+<section id="comparation-results" class="slide">
+  <h2>Comparison results</h2>
+  <pre style="font-size: 95%;">
+Rehearsal ----------------------------------------------------------
+CanCan:                  0.200000   0.010000   0.210000 (  0.209705)
+Heimdallr:               0.470000   0.000000   0.470000 (  0.500858)
+Heimdallr (insecure):    0.210000   0.000000   0.210000 (  0.220875)
+------------------------------------------------- total: 0.890000sec
+
+                             user     system      total        real
+CanCan:                  0.200000   0.010000   0.210000 (  0.207055)
+Heimdallr:               0.450000   0.000000   0.450000 (  0.456898)
+Heimdallr (insecure):    0.190000   0.000000   0.190000 (  0.235545)
+  </pre>
+</section>
+
 <section id="authority" class="slide">
   <h1>Authority</h1>
 </section>
@@ -256,7 +315,14 @@ puts (user.implicit.id || '#FILTERED')
 </section>
 
 <section id="thanks" class="slide">
-  <h1>Thank you!</h1>
+  <h1>
+    Thank you!
+    <br />
+    <br />
+    <em style="font-size: 30%">
+      examples available at
+    <a href="https://github.com/denyago/auithorization-gems-example">denyago/auithorization-gems-example</a></em>
+  </h1>
 </section>
 <!-- End slides. -->
 
