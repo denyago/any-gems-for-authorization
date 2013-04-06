@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=1024, user-scalable=no">
+
+	<title>Authorization</title>
+
+	<!-- Required stylesheet -->
+	<link rel="stylesheet" href="core/deck.core.css">
+
+	<!-- Extension CSS files go here. Remove or add as needed. -->
+	<link rel="stylesheet" href="extensions/scale/deck.scale.css">
+    <link rel="stylesheet" href="extensions/codemirror/deck.codemirror.css">
+    <link rel="stylesheet" href="extensions/codemirror/themes/default.css">
+
+	<!-- Style theme. More available in /themes/style/ or create your own. -->
+	<link rel="stylesheet" href="themes/style/swiss.css">
+
+	<!-- Transition theme. More available in /themes/transition/ or create your own. -->
+	<link rel="stylesheet" href="themes/transition/horizontal-slide.css">
+
+	<!-- Required Modernizr file -->
+	<script src="modernizr.custom.js"></script>
+</head>
+<body class="deck-container">
+
+<!-- Begin slides. Just make elements with a class of slide. -->
+
+<section id="auth" class="slide">
+  <h1>
+    Any gems for authorization?
+    <br />
+    <br />
+    <em style="font-size: 30%">by
+    Denis Yagofarov, developer at Aejis,
+    <a href="https://github.com/denyago">@denyago</a></em>
+  </h1>
+</section>
+
+<section class="slide">
+  <h2>Authentication vs. Authorization</i></h2>
+  <div class="sample-content">
+    <p id="authentication" class="slide">Authentication - <strong>Who?</strong></p>
+    <p id="authorization"  class="slide">Authorization  - <strong>Can?</strong></p>
+  </div>
+</section>
+
+<section id="who-acts" class="slide">
+  <h2>Who acts?</h2>
+  <p>
+    <ul>
+      <li>Subject</li>
+      <li>Context</li>
+      <li>Action</li>
+    </ul>
+  </p>
+  <p id="blow-bomb-example" class="slide">
+    <textarea class="code" mode="ruby">can? current_user, :blow, @a_bomb</textarea>
+  </p>
+  <p id="blow-other-bomb-example" class="slide">
+    <textarea class="code" mode="ruby">@a_bomb.restrict(current_user).blow!</textarea>
+  </p>
+</section>
+
+<section id="what-do-we-have" class="slide">
+  <h1>What do we have?</h1>
+</section>
+
+<section id="famous-gems" class="slide">
+  <h2>What do we have?</h2>
+  <ul>
+    <li id="cancan-gem" class="slide"><h3>CanCan</h3> <a href="https://github.com/ryanb/cancan">ryanb/cancan</a></li>
+    <li id="heimdallr-gem" class="slide"><h3>Heimdallr</h3> <a href="https://github.com/inossidabile/heimdallr">inossidabile/heimdallr</a></li>
+    <li id="authority-gem" class="slide"><h3>Authority</h3> <a href="https://github.com/nathanl/authority">nathanl/authority</a></li>
+    <li id="declarative_authorization-gem" class="slide"><h3>Declarative Authorization</h3> <a href="https://github.com/stffn/declarative_authorization">stffn/declarative_authorization</a></li>
+  </ul>
+</section>
+
+<section id="what-do-i-want" class="slide">
+  <h2>What do I want?</h2>
+  <p>
+    (as a <code>current_user</code>)
+  </p>
+  <ol>
+    <li>Load collection of models</li>
+    <li>Auth an action (<code>create</code>, <code>blow!</code>, etc.)</li>
+    <li id="what-do-i-want-0" class="slide">... and do it fast!</li>
+    <li id="what-do-i-want-1" class="slide">... and be happy with the code</li>
+    <li id="what-do-i-want-2" class="slide">... and not <code>require 'rails'</code></li>
+  </ol>
+</section>
+
+<section id="cancan" class="slide">
+  <h1>CanCan</h1>
+</section>
+
+<section id="cancan-setup" class="slide">
+  <h2>Setup CanCan</h2>
+  <textarea class="code" method="ruby">
+class Ability
+  include CanCan::Ability
+  def initialize(user)
+    user ||= User.new
+
+    can :read, User,    'users.id > 10'
+    can :edit, User,    id: user.id
+    can :see_id, User,  id: user.id
+  end
+end
+  </textarea>
+</section>
+
+<section id="cancan-use" class="slide">
+  <h2>Use CanCan</h2>
+  <textarea class="code" method="ruby">
+puts 'Read: ' + User.accessible_by(current_ability).pluck(:name).join(', ')
+# => Read: ...long line of names
+
+user = User.accessible_by(current_ability).find_by_id(42)
+user.update_attributes(name: '42th User') if current_ability.can? :edit, user
+puts 'Write: ' + user.name
+# => Write: ...not a name we tried to set
+
+puts (current_ability.can?(:see_id, user) ? user.id : '#FILTERED')
+# => #FILTERED
+  </textarea>
+</section>
+
+<section id="cancan-good" class="slide">
+  <h2>CanCan is good</h2>
+  <ul>
+    <li id="cancan-good-1" class="slide">Popular</li>
+    <li id="cancan-good-2" class="slide">Plays nice with rails</li>
+    <li id="cancan-good-3" class="slide">Fast to fetch records</li>
+  </ul>
+</section>
+
+<section id="cancan-bad" class="slide">
+  <h2>CanCan is bad</h2>
+  <ul>
+    <li id="cancan-bad-1" class="slide">Ability for all classes loaded on each request (God object <code>ability.rb</code>)</li>
+    <li id="cancan-bad-2" class="slide">Need to have <code>current_ability</code> in all required places</li>
+    <li id="cancan-bad-3" class="slide">Hard to filter secret information on viewes</li>
+  </ul>
+</section>
+
+<section id="heimdallr" class="slide">
+  <h1>Heimdallr</h1>
+</section>
+
+<section id="heimdallr-setup" class="slide">
+  <h2>Setup Heimdallr</h2>
+  <textarea class="code" method="ruby">
+module UserAbility
+  extend ActiveSupport::Concern
+
+  included do
+    include Heimdallr::Model
+
+    restrict do |user, record|
+      user ||= User.new
+
+      scope :fetch, -> { where('users.id > 10') }
+
+      if record
+        can    :view
+        cannot :view, [:id] unless record.id == user.id
+        can    :update  if record.id == user.id
+      end
+    end
+  end
+end
+
+class User
+  include UserAbility
+end
+  </textarea>
+</section>
+
+<section id="heimdallr-use" class="slide">
+  <h2>Use Heimdallr</h2>
+  <textarea class="code" method="ruby">
+puts 'Read: ' + User.restrict(@current_user).pluck(:name).join(', ')
+# => Read: ...long line of names
+
+user = User.restrict(@current_user).find_by_id(42)
+begin
+  user.update_attributes(name: '42th User')
+rescue => e
+  puts "Boom! #{e}"
+end
+puts 'Write: ' + user.name
+# => Boom! Updating was not explicitly allowed
+# => Write: 42th User
+# ...but
+puts 'Write again: ' + User.find(42).name
+# => Write again: ... good old name
+
+puts (user.implicit.id || '#FILTERED')
+# => #FILTERED
+  </textarea>
+</section>
+
+<section id="heimdallr-good" class="slide">
+  <h2>Heimdallr is good</h2>
+  <ul>
+    <li id="heimdallr-good-1" class="slide">Modular</li>
+    <li id="heimdallr-good-2" class="slide">Loads only required data (from <code>restrict</code> block)</li>
+    <li id="heimdallr-good-3" class="slide">Uses Proxy object instead of original record</li>
+  </ul>
+  <p id="heimdallr-proxy" class="slide">
+    <code>#&lt;Heimdallr::Proxy::Record: #&lt;User id: 42, name: "42th User">></code>
+  </p>
+  <code>
+</section>
+
+<section id="heimdallr-bad" class="slide">
+  <h2>Heimdallr is bad</h2>
+  <ul>
+    <li id="heimdallr-bad-1" class="slide">81 &#9733; and 8 forks</li>
+    <li id="heimdallr-bad-2" class="slide">Not so comfortable API</li>
+    <li id="heimdallr-bad-3" class="slide">Slow to instantiate much records (evaluates <code>restrict</code> block each time)</li>
+  </ul>
+</section>
+
+<section id="authority" class="slide">
+  <h1>Authority</h1>
+</section>
+
+<section id="authority-description" class="slide">
+  <h2>Authority</h2>
+  <ul>
+    <li>Rails-dependant</li>
+    <li>ORM-neutral (use own scopes like <code>available_for(current_user)</code>)</li>
+    <li>Modular</li>
+  </ul>
+</section>
+
+<section id="da" class="slide">
+  <h1>Declarative Authorization</h1>
+</section>
+
+<section id="da-description" class="slide">
+  <h2>Declarative Authorization</h2>
+  <ul>
+    <li>5 years old gem</li>
+    <li>Looking like CanCan to me</li>
+    <li>Uses roles to determine user permissions</li>
+  </ul>
+</section>
+
+<section id="conclusion" class="slide">
+  <h1>Still no perfect gems for authorization.</h1>
+</section>
+
+<section id="thanks" class="slide">
+  <h1>Thank you!</h1>
+</section>
+<!-- End slides. -->
+
+<!-- Begin extension snippets. Add or remove as needed. -->
+
+<!-- End extension snippets. -->
+
+<!-- Required JS files. -->
+<script src="jquery-1.7.2.min.js"></script>
+<script src="core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="core/deck.core.js"></script>
+<script src="extensions/scale/deck.scale.js"></script>
+<script src="extensions/hash/deck.hash.js"></script>
+
+<script src="extensions/codemirror/codemirror.js"></script>
+<script src="extensions/codemirror/mode/ruby/ruby.js"></script>
+<script src="extensions/codemirror/deck.codemirror.js"></script>
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+	$(function() {
+		$.deck('.slide');
+	});
+</script>
+
+</body>
+</html>
